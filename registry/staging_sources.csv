@@ -1,0 +1,10 @@
+source_id,domain,staged_filename,processing_priority,active,shape
+World Bank,economic_performance,wdi_stage.parquet,1,TRUE,
+IMF,economic_performance,weo_stage.parquet,1,TRUE,
+Energy Institute,energy,energy_institute_stage.parquet,1,TRUE,
+Our World in Data,energy,owid_energy_stage.parquet,1,TRUE,
+Our World in Data,emissions,owid_co2_stage.parquet,1,TRUE,
+WIOD,input_output,wiod_stage.parquet,1,TRUE,
+IMF,trade,imf_dots_bilateral_stage.parquet,3,TRUE,bilateral
+UN Comtrade,trade,un_comtrade_bilateral,3,TRUE,bilateral
+OECD,input_output,oecd_tiva_io_stage,3,TRUE,io

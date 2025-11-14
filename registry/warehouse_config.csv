@@ -1,0 +1,10 @@
+config_key,config_value,description
+primary_database,duckdb,Primary database engine
+database_name,global.duckdb,Main DuckDB database filename
+sqlite_database_name,global.duckdb,SQLite database filename
+database_path,warehouse/db/,Database directory relative to project root
+fact_annual_path,warehouse/facts/fact_annual/,Annual facts directory
+fact_native_path,warehouse/facts/fact_native_freq/,Native frequency facts directory  
+fact_bilateral_path,warehouse/facts/fact_bilateral/,Bilateral facts directory
+dimensions_path,warehouse/dims/,Dimension tables directory
+staging_path,data/stage/,Staging data directory
