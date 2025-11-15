@@ -670,7 +670,35 @@ def render_io_tab():
 # ---------------------------------------------------------
 # Main
 # ---------------------------------------------------------
+
 def main():
+    # AUTO-FIX CLOUD PATHS ON STARTUP
+    try:
+        con = get_db_connection()
+        # Test if views work, if not recreate them
+        try:
+            con.execute("SELECT 1 FROM dim_indicator_v LIMIT 1")
+        except:
+            st.info("🔄 Setting up database for cloud environment...")
+            # Recreate views with cloud paths
+            views_sql = {
+                'dim_indicator_v': "CREATE OR REPLACE VIEW dim_indicator_v AS SELECT * FROM read_parquet('warehouse/dims/dim_indicator.parquet')",
+                'fact_annual_v': "CREATE OR REPLACE VIEW fact_annual_v AS SELECT * FROM read_parquet('warehouse/facts/fact_annual/fact_annual.parquet')",
+                'fact_bilateral_v': "CREATE OR REPLACE VIEW fact_bilateral_v AS SELECT reporter_iso3 AS reporter, partner_iso3 AS partner, indicator_code, year, value, unit_code, source_id, freq, vintage_date FROM read_parquet('warehouse/facts/fact_bilateral/*.parquet')"
+            }
+            for view_name, sql in views_sql.items():
+                try:
+                    con.execute(sql)
+                except Exception as e:
+                    st.error(f"Failed to create {view_name}: {e}")
+        con.close()
+    except Exception as e:
+        st.error(f"Database setup error: {e}")    
+    
+    
+    
+    
+    
     st.title("🌍 Global Development Indicators Dashboard")
 
     st.sidebar.title("🔧 Dashboard Controls")
