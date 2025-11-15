@@ -671,34 +671,108 @@ def render_io_tab():
 # Main
 # ---------------------------------------------------------
 
+
 def main():
-    # AUTO-FIX CLOUD PATHS ON STARTUP
+    # IMPROVED CLOUD PATH FIX - Only runs if needed and doesn't break flow
     try:
         con = get_db_connection()
-        # Test if views work, if not recreate them
+        
+        # Test if views need fixing by checking one critical view
+        needs_fix = False
         try:
             con.execute("SELECT 1 FROM dim_indicator_v LIMIT 1")
+            # If we get here, the view works
         except:
+            # View is broken, needs fixing
+            needs_fix = True
+        
+        if needs_fix:
             st.info("🔄 Setting up database for cloud environment...")
-            # Recreate views with cloud paths
-            views_sql = {
-                'dim_indicator_v': "CREATE OR REPLACE VIEW dim_indicator_v AS SELECT * FROM read_parquet('warehouse/dims/dim_indicator.parquet')",
-                'fact_annual_v': "CREATE OR REPLACE VIEW fact_annual_v AS SELECT * FROM read_parquet('warehouse/facts/fact_annual/fact_annual.parquet')",
-                'fact_bilateral_v': "CREATE OR REPLACE VIEW fact_bilateral_v AS SELECT reporter_iso3 AS reporter, partner_iso3 AS partner, indicator_code, year, value, unit_code, source_id, freq, vintage_date FROM read_parquet('warehouse/facts/fact_bilateral/*.parquet')"
+            
+            # List of all views that need to be fixed
+            views_to_fix = {
+                'dim_indicator_v': """
+                    CREATE OR REPLACE VIEW dim_indicator_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/dims/dim_indicator.parquet')
+                """,
+                'dim_country_v': """
+                    CREATE OR REPLACE VIEW dim_country_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/dims/dim_country.parquet')
+                """,
+                'dim_source_v': """
+                    CREATE OR REPLACE VIEW dim_source_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/dims/dim_source.parquet')
+                """,
+                'dim_unit_v': """
+                    CREATE OR REPLACE VIEW dim_unit_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/dims/dim_unit.parquet')
+                """,
+                'dim_industry_v': """
+                    CREATE OR REPLACE VIEW dim_industry_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/dims/dim_industry.parquet')
+                """,
+                'fact_annual_v': """
+                    CREATE OR REPLACE VIEW fact_annual_v AS 
+                    SELECT * 
+                    FROM read_parquet('warehouse/facts/fact_annual/fact_annual.parquet')
+                """,
+                'fact_bilateral_v': """
+                    CREATE OR REPLACE VIEW fact_bilateral_v AS 
+                    SELECT 
+                        reporter_iso3 AS reporter, 
+                        partner_iso3 AS partner, 
+                        indicator_code, 
+                        year, 
+                        value, 
+                        unit_code, 
+                        source_id, 
+                        freq, 
+                        vintage_date 
+                    FROM read_parquet('warehouse/facts/fact_bilateral/*.parquet')
+                """,
+                'fact_bilateral_world_agg': """
+                    CREATE OR REPLACE VIEW fact_bilateral_world_agg AS 
+                    SELECT 
+                        reporter, 
+                        'WLD' AS partner, 
+                        indicator_code, 
+                        year, 
+                        SUM(value) AS value,
+                        ANY_VALUE(unit_code) AS unit_code, 
+                        ANY_VALUE(source_id) AS source_id
+                    FROM fact_bilateral_v
+                    WHERE partner <> reporter
+                    GROUP BY reporter, partner, indicator_code, year
+                """
             }
-            for view_name, sql in views_sql.items():
+            
+            # Fix each view
+            success_count = 0
+            for view_name, view_sql in views_to_fix.items():
                 try:
-                    con.execute(sql)
+                    con.execute(f"DROP VIEW IF EXISTS {view_name}")
+                    con.execute(view_sql)
+                    success_count += 1
                 except Exception as e:
-                    st.error(f"Failed to create {view_name}: {e}")
+                    st.error(f"❌ Failed to fix {view_name}: {str(e)}")
+            
+            if success_count > 0:
+                st.success(f"✅ Fixed {success_count} database views!")
+                # Use experimental_rerun instead of rerun for better compatibility
+                st.experimental_rerun()
+        
         con.close()
+        
     except Exception as e:
-        st.error(f"Database setup error: {e}")    
-    
-    
-    
-    
-    
+        st.error(f"💥 Database connection error: {str(e)}")
+        # Don't stop the app, let it try to continue
+
+    # REST OF YOUR EXISTING main() FUNCTION CONTINUES HERE
     st.title("🌍 Global Development Indicators Dashboard")
 
     st.sidebar.title("🔧 Dashboard Controls")
@@ -711,6 +785,7 @@ def main():
         ["Scalar (country–year)", "Bilateral (reporter–partner–year)", "Input–Output (industry–industry)"],
         index=0
     )
+
 
     if data_type.startswith("Scalar"):
         render_scalar_tab()
