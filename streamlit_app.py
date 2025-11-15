@@ -21,20 +21,38 @@ st.set_page_config(
 
 # Add project root to path
 project_root = Path(__file__).parent
-sys.path.append(str(project_root / "dashboard"))
+sys.path.append(str(project_root))
 
 st.title("🌍 4DGDO Global Data Observatory")
 
 try:
-    # Import and run your main dashboard
-    from main import main
+    # Try to import from dashboard directory first
+    from dashboard.main import main
     main()
     
 except ModuleNotFoundError as e:
-    st.error(f"Missing dependency: {e}")
-    st.info("The app is currently being updated with required packages. Please wait a few minutes and refresh.")
-    st.code("Missing package detected - deployment in progress...")
-    
+    # If dashboard structure doesn't exist, try direct import
+    try:
+        st.info("Trying alternative import structure...")
+        from main import main
+        main()
+    except ImportError:
+        st.error(f"Application structure issue: {e}")
+        st.info("""
+        Please ensure your project structure is:
+        ```
+        your-repo/
+        ├── streamlit_app.py
+        ├── requirements.txt
+        ├── .gitignore
+        ├── dashboard/
+        │   └── main.py
+        └── warehouse/
+            └── db/
+                └── global.duckdb
+        ```
+        """)
+        
 except Exception as e:
     st.error(f"Error loading dashboard: {str(e)}")
-    st.info("Please check the application logs for more details")
+    st.info("The application is starting up. If this persists, check the deployment logs.")

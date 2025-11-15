@@ -1,3 +1,7 @@
+# DuckDB database files
+*.duckdb
+*.duckdb.wal
+
 # Python
 __pycache__/
 *.py[cod]
@@ -20,14 +24,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment
-.env
-.venv
-env/
+# Virtual environments
 venv/
-ENV/
-env.bak/
-venv.bak/
+env/
+.venv/
 
 # IDE
 .vscode/
@@ -41,3 +41,19 @@ Thumbs.db
 
 # Streamlit
 .streamlit/
+
+# Logs
+*.log
+logs/
+
+# Data directories
+data/
+warehouse/raw/
+warehouse/staging/
+warehouse/export/
+
+# Development/backup files
+dashboard/main0.py
+dashboard/diagnostic.py
+*.bak
+*_backup.py
