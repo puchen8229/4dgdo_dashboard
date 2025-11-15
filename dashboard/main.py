@@ -29,8 +29,59 @@ st.set_page_config(
 # ---------------------------------------------------------
 # Paths
 # ---------------------------------------------------------
-project_root = Path(__file__).parent.parent
-db_path = project_root / "warehouse" / "db" / "global.duckdb"
+# ---------------------------------------------------------
+# Paths - Cloud Compatible
+# ---------------------------------------------------------
+from pathlib import Path
+import streamlit as st
+
+def get_db_path():
+    """Get database path that works in both local and cloud environments"""
+    current_file = Path(__file__)
+    
+    # Debug information
+    debug_info = {
+        "current_file": str(current_file),
+        "current_parent": str(current_file.parent),
+        "current_parent_name": current_file.parent.name
+    }
+    
+    # Try multiple path patterns
+    possible_paths = [
+        # Pattern 1: App in dashboard/ folder (local deployment)
+        current_file.parent / "warehouse" / "db" / "global.duckdb",
+        # Pattern 2: App at root (cloud deployment)  
+        current_file.parent.parent / "warehouse" / "db" / "global.duckdb",
+        # Pattern 3: Relative to current directory
+        Path("warehouse/db/global.duckdb"),
+    ]
+    
+    # Test each path
+    for db_path in possible_paths:
+        if db_path.exists():
+            return db_path
+    
+    # If no path found, show error with debug info
+    error_msg = f"""
+    ❌ Database not found!
+    
+    Debug Information:
+    - Current file: {debug_info['current_file']}
+    - Current parent: {debug_info['current_parent']} 
+    - Parent folder name: {debug_info['current_parent_name']}
+    
+    Tried paths:
+    {chr(10).join(f'    - {p}' for p in possible_paths)}
+    
+    💡 Solution: Run 'python etl/fix_database_paths_cloud.py' first
+    """
+    st.error(error_msg)
+    st.stop()
+
+# Get the database path
+db_path = get_db_path()
+
+
 
 # ---------------------------------------------------------
 # Database connection helper
