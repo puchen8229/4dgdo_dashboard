@@ -12,18 +12,18 @@ import os
 from pathlib import Path
 
 # Set page config first
-st.set_page_config(
-    page_title="4DGDO Global Data Observatory",
-    page_icon="🌍",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+#st.set_page_config(
+#    page_title="4DGDO Global Data Observatory",
+#    page_icon="🌍",
+#    layout="wide",
+#    initial_sidebar_state="expanded"
+#)
 
 # Add project root to path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-st.title("🌍 4DGDO Global Data Observatory")
+#st.title("🌍 4DGDO Global Data Observatory")
 
 try:
     # Try to import from dashboard directory first
