@@ -81,6 +81,9 @@ def get_db_path():
 # Get the database path
 db_path = get_db_path()
 
+# Absolute warehouse paths derived from the opened DB
+WAREHOUSE_DIR = db_path.parent.parent  # .../warehouse
+IO_PARQUET_GLOB = (WAREHOUSE_DIR / "facts" / "fact_io").as_posix().replace("\\", "/") + "/**/*.parquet"
 
 
 # ---------------------------------------------------------
@@ -686,6 +689,15 @@ def main():
             # View is broken, needs fixing
             needs_fix = True
         
+        # Also fix if IO view is missing/broken
+        try:
+            con.execute("SELECT 1 FROM fact_io_v LIMIT 1")
+        except Exception:
+            needs_fix = True
+        
+        
+        
+        
         if needs_fix:
             st.info("🔄 Setting up database for cloud environment...")
             
@@ -748,7 +760,35 @@ def main():
                     FROM fact_bilateral_v
                     WHERE partner <> reporter
                     GROUP BY reporter, partner, indicator_code, year
-                """
+                """,
+                'fact_io_v': f"""
+                    CREATE OR REPLACE VIEW fact_io_v AS
+                    SELECT
+                        reporter_iso3 AS reporter,
+                        partner_iso3  AS partner,
+                        from_industry_code,
+                        to_industry_code,
+                        indicator_code,
+                        year,
+                        value,
+                        unit_code,
+                        source_id,
+                        freq,
+                        vintage_date
+                    FROM read_parquet('{IO_PARQUET_GLOB}')
+                """,
+                'fact_io_named_v': """
+                    CREATE OR REPLACE VIEW fact_io_named_v AS
+                    SELECT
+                        f.*,
+                        fi.industry_name AS from_industry_name,
+                        ti.industry_name AS to_industry_name
+                    FROM fact_io_v f
+                    LEFT JOIN dim_industry_v fi ON f.from_industry_code = fi.industry_code
+                    LEFT JOIN dim_industry_v ti ON f.to_industry_code   = ti.industry_code
+                """                
+                
+                
             }
             
             # Fix each view
